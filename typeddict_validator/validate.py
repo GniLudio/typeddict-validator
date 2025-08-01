@@ -1,6 +1,7 @@
 from typing import (
     Any,
     Literal,
+    NotRequired,
     Type,
     TypeGuard,
     TypeVar,
@@ -38,8 +39,14 @@ def validate_typeddict(
         raise ValueError("t must be a type object of TypedDict.")
     try:
         for k, vt in t.__annotations__.items():
-            if k not in d.keys():
+            origin = get_origin(vt)
+            if k not in d.keys() and origin is NotRequired:
+                continue
+            elif k not in d.keys():
                 raise DictMissingKeyException(key=k)
+            elif origin is NotRequired:
+                vt = get_args(vt)[0]
+
             _validate_value(k=k, v=d[k], expected=vt)
     except (DictMissingKeyException, DictValueTypeMismatchException) as e:
         if silent:
